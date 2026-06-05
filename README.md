@@ -10,7 +10,7 @@ In scope:
 - Open Douyin feeds and URLs.
 - Check login state and wait while the user logs in manually.
 - Control playback, sound, fullscreen, clean-screen, danmaku, and feed navigation.
-- Like, favorite, share, and draft or submit comments.
+- Like, follow the current video author, favorite, share, and draft or submit comments.
 - Capture screenshots and record screen video plus system audio.
 - Package those actions as a CLI-Anything style harness.
 
@@ -92,6 +92,7 @@ douyin-web fullscreen
 douyin-web prepare
 douyin-web focus
 douyin-web like
+douyin-web follow-author
 douyin-web favorite
 douyin-web share
 douyin-web comments open

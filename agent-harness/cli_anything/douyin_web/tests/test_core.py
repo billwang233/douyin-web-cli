@@ -66,6 +66,7 @@ def test_cli_help():
     assert "volume" in result.output
     assert "comments" in result.output
     assert "danmaku-send" in result.output
+    assert "follow-author" in result.output
     assert "loop" in result.output
     assert "press" in result.output
     assert "click-text" in result.output

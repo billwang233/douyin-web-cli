@@ -84,6 +84,7 @@ Engagement actions:
 
 ```bash
 douyin-web like
+douyin-web follow-author
 douyin-web favorite
 douyin-web share
 douyin-web comments open

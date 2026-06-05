@@ -224,6 +224,10 @@ def text_action(action: str, home: Optional[str] = None, **kwargs) -> ActionResu
     return _with_page(action, home, invoke)
 
 
+def follow_author(home: Optional[str] = None) -> ActionResult:
+    return _with_page("follow-author", home, lambda page: page.follow_author())
+
+
 def comment(text: str, submit: bool = False, home: Optional[str] = None) -> ActionResult:
     return _with_page("comment", home, lambda page: page.comment(text=text, submit=submit))
 

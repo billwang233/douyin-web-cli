@@ -344,6 +344,178 @@ class DouyinPage:
             except BrowserBackendError as rail_error:
                 raise BrowserBackendError(f"{text_error}; right rail fallback failed: {rail_error}") from rail_error
 
+    async def follow_author(self) -> dict[str, Any]:
+        target = await self.page.evaluate(
+            """
+            () => {
+              const textOf = (el) => (el.innerText || el.textContent || '').trim().replace(/\\s+/g, ' ');
+              const visibleElement = (el) => {
+                const bounds = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                return {
+                  el,
+                  text: textOf(el),
+                  x: bounds.x,
+                  y: bounds.y,
+                  w: bounds.width,
+                  h: bounds.height,
+                  cx: bounds.x + bounds.width / 2,
+                  cy: bounds.y + bounds.height / 2,
+                  cls: String(el.className || ''),
+                  role: el.getAttribute('role') || '',
+                  aria: el.getAttribute('aria-label') || '',
+                  tag: el.tagName,
+                  cursor: style.cursor,
+                  color: style.color,
+                  backgroundColor: style.backgroundColor,
+                  display: style.display,
+                  visibility: style.visibility,
+                  opacity: Number(style.opacity),
+                };
+              };
+              const isVisible = (item) => (
+                item.w >= 8
+                  && item.h >= 8
+                  && item.cx >= 0
+                  && item.cx <= window.innerWidth
+                  && item.cy >= 0
+                  && item.cy <= window.innerHeight
+                  && item.display !== 'none'
+                  && item.visibility !== 'hidden'
+                  && item.opacity > 0
+              );
+              const players = Array.from(document.querySelectorAll(
+                '.playerContainer,.basePlayerContainer,.slider-video,[class*="playerContainer"],[class*="basePlayerContainer"]'
+              )).map(visibleElement).filter((item) => (
+                isVisible(item)
+                  && item.w > 200
+                  && item.h > 200
+                  && item.x < window.innerWidth * 0.85
+              )).sort((a, b) => (
+                Math.abs(a.y) - Math.abs(b.y)
+                  || (b.w * b.h) - (a.w * a.h)
+              ));
+              const player = players[0] || { x: 0, y: 0, w: window.innerWidth * 0.72, h: window.innerHeight, cx: window.innerWidth * 0.36, cy: window.innerHeight / 2 };
+              player.right = player.x + player.w;
+              player.bottom = player.y + player.h;
+
+              const inRail = (item) => (
+                item.cx >= Math.max(0, player.right - 150)
+                  && item.cx <= Math.min(window.innerWidth, player.right + 70)
+                  && item.cy >= Math.max(0, player.y + 16)
+                  && item.cy <= Math.min(window.innerHeight, player.bottom + 80)
+              );
+              const inAuthorBand = (item) => (
+                item.cx >= Math.max(0, player.x - 20)
+                  && item.cx <= Math.min(window.innerWidth, player.right + 80)
+                  && item.cy >= Math.max(0, player.bottom - 280)
+                  && item.cy <= Math.min(window.innerHeight, player.bottom + 80)
+              );
+              const textLooksFollow = (text) => (
+                /^\\+?\\s*关注$/.test(text)
+                  || (text.includes('关注') && text.length <= 8 && !/(已关注|互相关注|关注中|取消关注|关注页|粉丝|关注了)/.test(text))
+              );
+              const textLooksAlready = (text) => /(已关注|互相关注|关注中)/.test(text);
+              const elements = Array.from(document.querySelectorAll('button,a,div,span,[role="button"]'))
+                .map(visibleElement)
+                .filter(isVisible);
+              const already = elements
+                .filter((item) => (inRail(item) || inAuthorBand(item)) && textLooksAlready(item.text))
+                .sort((a, b) => a.y - b.y || a.x - b.x)[0];
+              if (already) {
+                const { el, ...safe } = already;
+                return {
+                  ok: true,
+                  alreadyFollowing: true,
+                  method: 'visible-following-state',
+                  target: safe,
+                  player: { x: player.x, y: player.y, right: player.right, bottom: player.bottom },
+                };
+              }
+
+              const textCandidates = elements
+                .filter((item) => (inRail(item) || inAuthorBand(item)) && textLooksFollow(item.text))
+                .map((item) => {
+                  const buttonish = item.tag === 'BUTTON' || item.role === 'button' || item.cursor === 'pointer' || item.aria.includes('关注');
+                  const railScore = inRail(item) ? 100 : 0;
+                  const authorScore = inAuthorBand(item) ? 60 : 0;
+                  const sizePenalty = Math.abs(item.w - 52) / 10 + Math.abs(item.h - 28) / 10;
+                  return { ...item, score: railScore + authorScore + (buttonish ? 30 : 0) - sizePenalty };
+                })
+                .sort((a, b) => b.score - a.score || a.y - b.y);
+              if (textCandidates.length) {
+                const { el, ...safe } = textCandidates[0];
+                return {
+                  ok: true,
+                  alreadyFollowing: false,
+                  method: 'visible-follow-button',
+                  x: Math.round(textCandidates[0].cx),
+                  y: Math.round(textCandidates[0].cy),
+                  target: safe,
+                  candidates: textCandidates.slice(0, 6).map(({el, ...rest}) => rest),
+                  player: { x: player.x, y: player.y, right: player.right, bottom: player.bottom },
+                };
+              }
+
+              const redish = (item) => {
+                const colors = `${item.color} ${item.backgroundColor}`.toLowerCase();
+                return /(rgb\\(254|rgb\\(255|rgb\\(248|#fe|#ff|red|pink)/.test(colors);
+              };
+              const plusCandidates = elements
+                .filter((item) => (
+                  inRail(item)
+                    && item.w >= 10
+                    && item.w <= 48
+                    && item.h >= 10
+                    && item.h <= 48
+                    && item.cy <= player.y + Math.max(220, player.h * 0.32)
+                    && (item.text === '+' || item.text === '＋' || item.aria.includes('关注') || item.cls.includes('follow') || redish(item))
+                ))
+                .map((item) => ({
+                  ...item,
+                  score: (redish(item) ? 40 : 0) + ((item.text === '+' || item.text === '＋') ? 30 : 0) + (item.aria.includes('关注') ? 40 : 0) - Math.abs(item.w - item.h),
+                }))
+                .sort((a, b) => b.score - a.score || a.y - b.y);
+              if (plusCandidates.length) {
+                const { el, ...safe } = plusCandidates[0];
+                return {
+                  ok: true,
+                  alreadyFollowing: false,
+                  method: 'right-rail-author-plus',
+                  x: Math.round(plusCandidates[0].cx),
+                  y: Math.round(plusCandidates[0].cy),
+                  target: safe,
+                  candidates: plusCandidates.slice(0, 8).map(({el, ...rest}) => rest),
+                  player: { x: player.x, y: player.y, right: player.right, bottom: player.bottom },
+                  note: 'Clicked a likely author follow plus button; verify account state visually from the screenshot.',
+                };
+              }
+              return {
+                ok: false,
+                player: { x: player.x, y: player.y, right: player.right, bottom: player.bottom },
+                sample: elements.filter((item) => inRail(item) || inAuthorBand(item)).slice(0, 20).map(({el, ...rest}) => rest),
+              };
+            }
+            """
+        )
+        if not target.get("ok"):
+            raise BrowserBackendError(f"could not find a current-author follow control: {target}")
+        if target.get("alreadyFollowing"):
+            return target
+        await self.page.mouse.click(target["x"], target["y"])
+        await self.page.wait_for_timeout(700)
+        after = await self.page.evaluate(
+            """
+            () => {
+              const text = (document.body.innerText || document.body.textContent || '').replace(/\\s+/g, ' ');
+              return {
+                visibleFollowingText: /(已关注|互相关注|关注中)/.test(text),
+              };
+            }
+            """
+        )
+        return {**target, "after": after}
+
     async def _click_right_rail_action(self, action: str) -> dict[str, Any]:
         slot = RIGHT_RAIL_ACTION_SLOTS[action]
         target = await self.page.evaluate(

@@ -3,7 +3,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="cli-anything-douyin-web",
-    version="0.1.0",
+    version="0.1.1",
     description="CLI-Anything style harness for controlling Douyin web.",
     packages=find_namespace_packages(include=["cli_anything.*"]),
     include_package_data=True,

@@ -294,6 +294,13 @@ def share(ctx: click.Context) -> None:
     emit(ctx, actions.text_action("share", home=ctx.obj["home"]))
 
 
+@cli.command("follow-author")
+@click.pass_context
+def follow_author(ctx: click.Context) -> None:
+    """Follow the author of the current video."""
+    emit(ctx, actions.follow_author(home=ctx.obj["home"]))
+
+
 @cli.command()
 @click.argument("text")
 @click.option("--submit/--no-submit", default=False, show_default=True, help="Submit after typing.")
