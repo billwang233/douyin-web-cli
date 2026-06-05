@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cli-anything-douyin-web"
+version = "0.1.0"
+description = "CLI-Anything style harness for controlling Douyin web."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Bill Wang" }
+]
+keywords = ["douyin", "cli", "browser-automation", "playwright", "cli-anything"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet :: WWW/HTTP :: Browsers",
+  "Topic :: Utilities",
+]
+dependencies = [
+  "click>=8.1",
+  "playwright>=1.43",
+]
+
+[project.urls]
+Homepage = "https://github.com/billwang233/douyin-web-cli"
+Repository = "https://github.com/billwang233/douyin-web-cli"
+Issues = "https://github.com/billwang233/douyin-web-cli/issues"
+
+[project.scripts]
+douyin-web = "cli_anything.douyin_web.douyin_web_cli:main"
+cli-anything-douyin-web = "cli_anything.douyin_web.douyin_web_cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "agent-harness" }
+
+[tool.setuptools.packages.find]
+where = ["agent-harness"]
+include = ["cli_anything*"]
+exclude = ["cli_anything.douyin_web.tests*"]
