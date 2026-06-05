@@ -27,7 +27,7 @@ description: Use this skill when the user wants an Agent to operate Douyin web t
 优先使用 skill 自带包装脚本：
 
 ```bash
-.codex/skills/douyin-web-control/scripts/douyin-web --json COMMAND
+skills/douyin-web-control/scripts/douyin-web --json COMMAND
 ```
 
 包装脚本会按顺序寻找 CLI：

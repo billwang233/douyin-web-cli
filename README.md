@@ -45,6 +45,16 @@ If the installed command is not on `PATH`, use the local wrapper:
 "$DOUYIN_CLI_ROOT/bin/douyin-web" --help
 ```
 
+## Agent Skill
+
+This repository also includes a portable Agent skill:
+
+```text
+skills/douyin-web-control/
+```
+
+The skill explains when an Agent should use `douyin-web`, how to call the CLI, which actions affect the account, and where to find the feature matrix. It is kept in a generic `skills/` directory instead of a platform-specific hidden directory, so Agent runtimes can copy or install it according to their own conventions.
+
 ## Command Surface
 
 ```bash
