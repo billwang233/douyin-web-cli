@@ -47,13 +47,19 @@ If the installed command is not on `PATH`, use the local wrapper:
 
 ## Agent Skill
 
-This repository also includes a portable Agent skill:
+This repository only ships the `douyin-web` CLI. If you want an AI Agent to understand how to use this CLI reliably, install the companion Agent skill from the separate skill repository:
 
-```text
-skills/douyin-web-control/
+```bash
+npx skills add billwang233/douyin-web-control-skill
 ```
 
-The skill explains when an Agent should use `douyin-web`, how to call the CLI, which actions affect the account, and where to find the feature matrix. It is kept in a generic `skills/` directory instead of a platform-specific hidden directory, so Agent runtimes can copy or install it according to their own conventions.
+Skill repository:
+
+```text
+https://github.com/billwang233/douyin-web-control-skill
+```
+
+The skill explains when an Agent should use `douyin-web`, how to call the CLI, which actions affect the account, and how to read screenshots from JSON output. Keep the CLI and the skill as separate projects: the CLI owns executable browser control, while the skill owns Agent-facing usage guidance.
 
 ## Command Surface
 
