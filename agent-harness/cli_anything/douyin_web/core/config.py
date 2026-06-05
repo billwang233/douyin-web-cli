@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import re
 
 
 DOUYIN_HOME_ENV = "DOUYIN_WEB_HOME"
@@ -8,6 +9,7 @@ BROWSER_PATH_ENV = "DOUYIN_BROWSER_PATH"
 DEFAULT_HOME = Path("~/.douyin-web-cli").expanduser()
 DEFAULT_USER_DATA_DIR_NAME = "browser-profile"
 DEFAULT_PORT = 9223
+PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 
 ROOT_URL = "https://www.douyin.com/"
 
@@ -70,6 +72,20 @@ ACTION_TEXTS = {
 def home_dir(path=None) -> Path:
     raw = path or os.environ.get(DOUYIN_HOME_ENV)
     return Path(raw).expanduser() if raw else DEFAULT_HOME
+
+
+def profile_home_dir(profile: str) -> Path:
+    if not PROFILE_NAME_RE.match(profile):
+        raise ValueError("profile must match [A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
+    return DEFAULT_HOME / "profiles" / profile
+
+
+def resolve_home(path=None, profile: str | None = None) -> Path:
+    if path and profile:
+        raise ValueError("use either --home or --profile, not both")
+    if profile:
+        return profile_home_dir(profile)
+    return home_dir(path)
 
 
 def session_path(path=None) -> Path:

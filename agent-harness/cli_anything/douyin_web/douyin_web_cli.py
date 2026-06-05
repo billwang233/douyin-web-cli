@@ -9,7 +9,7 @@ import sys
 import click
 
 from .core import actions
-from .core.config import FEED_URLS, feed_url, home_dir
+from .core.config import FEED_URLS, feed_url, home_dir, resolve_home
 from .core.state import ActionResult, append_history
 from .utils.recording import list_avfoundation_devices, record_avfoundation
 
@@ -21,6 +21,7 @@ def main() -> None:
 @click.group(invoke_without_command=True)
 @click.option("--json", "json_output", is_flag=True, help="Emit machine-readable JSON.")
 @click.option("--home", type=click.Path(file_okay=False, dir_okay=True), help="Override DOUYIN_WEB_HOME.")
+@click.option("--profile", help="Use an isolated named profile under ~/.douyin-web-cli/profiles/NAME.")
 @click.option("--screenshot/--no-screenshot", default=True, show_default=True, help="Capture the viewport after page actions.")
 @click.option("--screenshot-dir", type=click.Path(file_okay=False, dir_okay=True, path_type=Path), help="Directory for automatic screenshots.")
 @click.pass_context
@@ -28,13 +29,19 @@ def cli(
     ctx: click.Context,
     json_output: bool,
     home: str | None,
+    profile: str | None,
     screenshot: bool,
     screenshot_dir: Path | None,
 ) -> None:
     """Control Douyin web from the terminal."""
     ctx.ensure_object(dict)
+    try:
+        resolved_home = resolve_home(home, profile)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
     ctx.obj["json_output"] = json_output
-    ctx.obj["home"] = home
+    ctx.obj["home"] = str(resolved_home)
+    ctx.obj["profile"] = profile
     ctx.obj["auto_screenshot"] = screenshot
     ctx.obj["screenshot_dir"] = screenshot_dir
     if ctx.invoked_subcommand is None:
@@ -392,6 +399,8 @@ def repl(ctx: click.Context) -> None:
             click.echo(ctx.get_help())
             continue
         args = shlex.split(line)
+        if ctx.obj.get("home") and not _has_repl_home_override(args):
+            args = ["--home", ctx.obj["home"], *args]
         try:
             cli.main(
                 args=args,
@@ -400,6 +409,7 @@ def repl(ctx: click.Context) -> None:
                 obj={
                     "json_output": ctx.obj.get("json_output", False),
                     "home": ctx.obj.get("home"),
+                    "profile": ctx.obj.get("profile"),
                     "auto_screenshot": ctx.obj.get("auto_screenshot", True),
                     "screenshot_dir": ctx.obj.get("screenshot_dir"),
                 },
@@ -422,6 +432,13 @@ def emit(ctx: click.Context, result: ActionResult) -> None:
             click.echo(json.dumps(_compact_data(result.data), ensure_ascii=False, indent=2))
     if not result.ok:
         sys.exit(1)
+
+
+def _has_repl_home_override(args: list[str]) -> bool:
+    for arg in args:
+        if arg in {"--home", "--profile"} or arg.startswith("--home=") or arg.startswith("--profile="):
+            return True
+    return False
 
 
 def _attach_auto_screenshot(ctx: click.Context, result: ActionResult) -> None:

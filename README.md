@@ -45,6 +45,28 @@ If the installed command is not on `PATH`, use the local wrapper:
 "$DOUYIN_CLI_ROOT/bin/douyin-web" --help
 ```
 
+## Profiles
+
+Use `--profile NAME` to isolate concurrent browser sessions:
+
+```bash
+douyin-web --profile project-a launch recommend
+douyin-web --profile project-a open follow
+douyin-web --profile project-a current
+
+douyin-web --profile project-b launch recommend
+douyin-web --profile project-b open jingxuan
+douyin-web --profile project-b current
+```
+
+Each profile stores its own session, screenshots, and browser data under:
+
+```text
+~/.douyin-web-cli/profiles/NAME/
+```
+
+Do not mix `--profile` and `--home` in the same command. For parallel projects, keep passing the same `--profile` on every later command. `launch` automatically picks a free debugging port unless `--port` is provided.
+
 ## Agent Skill
 
 This repository only ships the `douyin-web` CLI. If you want an AI Agent to understand how to use this CLI reliably, install the companion Agent skill from the separate skill repository:
@@ -65,6 +87,7 @@ The skill explains when an Agent should use `douyin-web`, how to call the CLI, w
 
 ```bash
 douyin-web launch
+douyin-web --profile project-a launch
 douyin-web open recommend
 douyin-web feed jingxuan
 douyin-web status
@@ -106,6 +129,7 @@ Use `--json` before the command for machine-readable output:
 
 ```bash
 douyin-web --json current
+douyin-web --profile project-a --json current
 ```
 
 Page actions capture a viewport screenshot by default. The screenshot path is included in JSON output under `data.screenshot.path`.

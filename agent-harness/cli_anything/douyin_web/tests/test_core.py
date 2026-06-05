@@ -2,7 +2,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from cli_anything.douyin_web.core.config import feed_url
+from cli_anything.douyin_web.core.config import DEFAULT_HOME, feed_url, profile_home_dir, resolve_home
 from cli_anything.douyin_web.core.state import SessionState, load_session, save_session
 from cli_anything.douyin_web.douyin_web_cli import cli
 from cli_anything.douyin_web.utils.browser_backend import infer_login_status
@@ -28,6 +28,21 @@ def test_session_roundtrip(tmp_path: Path):
     assert loaded.pid == 123
 
 
+def test_profile_home_mapping():
+    assert profile_home_dir("project-a") == DEFAULT_HOME / "profiles" / "project-a"
+    assert resolve_home(None, "project.a_1") == DEFAULT_HOME / "profiles" / "project.a_1"
+
+
+def test_profile_rejects_unsafe_names():
+    for value in ["../x", "/tmp/x", "", "-bad", "bad/name"]:
+        try:
+            profile_home_dir(value)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"expected unsafe profile to fail: {value}")
+
+
 def test_parse_avfoundation_devices():
     output = """
     [AVFoundation indev @ 0x123] AVFoundation video devices:
@@ -50,6 +65,20 @@ def test_cli_state_json(tmp_path: Path):
     assert '"endpoint_ready": false' in result.output
 
 
+def test_cli_profile_state_json():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--json", "--profile", "pytest-profile", "state"])
+    assert result.exit_code == 0
+    assert '"action": "state"' in result.output
+
+
+def test_cli_rejects_home_and_profile(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--home", str(tmp_path), "--profile", "x", "state"])
+    assert result.exit_code == 1
+    assert "use either --home or --profile" in result.output
+
+
 def test_cli_help():
     runner = CliRunner()
     result = runner.invoke(cli, ["--help"])
@@ -59,6 +88,7 @@ def test_cli_help():
     assert "sound" in result.output
     assert "dismiss" in result.output
     assert "focus" in result.output
+    assert "--profile" in result.output
     assert "info" in result.output
     assert "search" in result.output
     assert "seek" in result.output

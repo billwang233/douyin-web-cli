@@ -38,6 +38,16 @@ Launch a controllable browser:
 douyin-web launch
 ```
 
+Launch an isolated profile for parallel projects:
+
+```bash
+douyin-web --profile project-a launch
+douyin-web --profile project-a open recommend
+douyin-web --profile project-a current
+```
+
+Each profile uses its own `~/.douyin-web-cli/profiles/NAME/` state and browser profile. Keep using the same `--profile` for later commands.
+
 Open the recommendation feed:
 
 ```bash
